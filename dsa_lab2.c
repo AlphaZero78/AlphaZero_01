@@ -89,13 +89,13 @@ int main(){
         if(IsEmpty(&Emergency_queue)) {
             for(int i=0;i<3;i++) {
                 if(!IsEmpty(&Normal_queue)) { 
-                    for(int i=0;i<3;i++) {
-                        if(!doctors[i].isBusy) {
+                    for(int j=0;j<3;j++) {
+                        if(!doctors[j].isBusy) {
                             Patient *p = Dequeue(&Normal_queue);
-                            doctors[i].currentP = *p;
-                            doctors[i].isBusy = true;
-                            doctors[i].finishTime = time + p->duration;
-                            fprintf(fp, "[Time %d]: %d号医生接诊患者 %s ,预计 Time %d 结束\n", time, doctors[i].id, p->name, doctors[i].finishTime);
+                            doctors[j].currentP = *p;
+                            doctors[j].isBusy = true;
+                            doctors[j].finishTime = time + p->duration;
+                            fprintf(fp, "[Time %d]: %d号医生接诊患者 %s ,预计 Time %d 结束\n", time, doctors[j].id, p->name, doctors[j].finishTime);
                             break;
                         }
                     }

@@ -1,0 +1,16 @@
+--- 医院仿真系统启动 ---
+[Time 1]: 患者 Alice 到达
+[Time 1]: 1号医生接诊患者 Alice ,预计 Time 6 结束
+[Time 2]: 急诊患者 Bob 到达
+[Time 2]: 患者 Charlie 到达
+[Time 3]: 患者 David 到达
+[Time 6]: 1号医生完成治疗患者 Alice
+[Time 6]: 1号、2号、3号医生开始救治急诊患者 Bob。预计 Time 17 结束
+[Time 17]: 1号医生完成治疗患者 Bob
+[Time 17]: 2号医生完成治疗患者 Bob
+[Time 17]: 3号医生完成治疗患者 Bob
+[Time 17]: 1号医生接诊患者 Charlie ,预计 Time 21 结束
+[Time 18]: 2号医生接诊患者 David ,预计 Time 21 结束
+[Time 21]: 1号医生完成治疗患者 Charlie
+[Time 21]: 2号医生完成治疗患者 David
+所有患者治疗完毕，系统运行结束

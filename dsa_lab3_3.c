@@ -1,6 +1,7 @@
 //哈夫曼树的构建与最优编码 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 typedef struct BiTreeNode {
     char data;
     int weight;
@@ -37,43 +38,56 @@ BiTreeNode* HuffmanTree(BiTreeNode** nodes, int n) {
     }
     return nodes[0];
 }
+void BuildCodes(BiTreeNode* root, char codes[256][101], char code[101], int depth) {
+    if (root == NULL) {
+        return;
+    }
+    if (root->left == NULL && root->right == NULL) {
+        if (depth == 0) {
+            code[depth++] = '0';
+        }
+        code[depth] = '\0';
+        strcpy(codes[(unsigned char)root->data], code);
+        return;
+    }
+    code[depth] = '0';
+    BuildCodes(root->left, codes, code, depth + 1);
+    code[depth] = '1';
+    BuildCodes(root->right, codes, code, depth + 1);
+}
 
 int main() {
+    int n;
     FILE* fp = fopen("lab3_3_input.txt", "r");
-    FILE* fp1 = fopen("lab3_3_output.txt", "w");
     if (fp == NULL) {
         return 1;
     }
-    int n;
     fscanf(fp, "%d", &n);
+    FILE* fp1 = fopen("lab3_3_output.txt", "w");
+    if (fp1 == NULL) {
+        fclose(fp);
+        return 1;
+    }
     BiTreeNode* treeNodes[100];
+    char chars[100];
     for (int i = 0; i < n; i++) {
         char data;
         int weight;
         fscanf(fp, " %c %d", &data, &weight);
+        chars[i] = data;
         treeNodes[i] = createNode(data, weight);
     }
-    BiTreeNode* huffmanTree = HuffmanTree(treeNodes, n);
-    //按照输入文件中的字符顺序，依次输出对应字符的哈夫曼编码
+    // 按照输入文件中的字符顺序，依次输出对应字符的哈夫曼编码
+
+    BiTreeNode* root = HuffmanTree(treeNodes, n);
+    char codes[256][101] = {0};
+    char code[101];
+    BuildCodes(root, codes, code, 0);
+
     for (int i = 0; i < n; i++) {
-        BiTreeNode* currentNode = huffmanTree;
-        char data = treeNodes[i]->data;
-        char code[100];
-        int index = 0;
-        while (currentNode->data != data) {
-            if (currentNode->left != NULL && currentNode->left->data == data) {
-                code[index++] = '0';
-                currentNode = currentNode->left;
-            } else if (currentNode->right != NULL && currentNode->right->data == data) {
-                code[index++] = '1';
-                currentNode = currentNode->right;
-            } else {
-                break;
-            }
-        }
-        code[index] = '\0';
-        fprintf(fp1, "%c: %s\n", data, code);
+        fprintf(fp1, "%c %s\n", chars[i], codes[(unsigned char)chars[i]]);
     }
+
     fclose(fp);
     fclose(fp1);
     return 0;

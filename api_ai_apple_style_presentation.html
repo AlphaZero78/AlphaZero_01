@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Call Advanced AI via API</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --ink: #1d1d1f;
+      --muted: #6e6e73;
+      --line: rgba(29, 29, 31, 0.12);
+      --panel: rgba(255, 255, 255, 0.78);
+      --cyan: #10c8ba;
+      --blue: #147ce5;
+      --green: #35c759;
+      --orange: #ff9f0a;
+      --red: #ff453a;
+      --radius: 26px;
+      --shadow: 0 18px 52px rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(20, 124, 229, 0.12), transparent 30%),
+        radial-gradient(circle at 82% 76%, rgba(16, 200, 186, 0.14), transparent 34%),
+        linear-gradient(135deg, #fbfbfd 0%, #f5f5f7 52%, #eef5f4 100%);
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      isolation: isolate;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: clamp(28px, 4.6vw, 76px);
+      opacity: 0;
+      transform: translateX(42px) scale(0.985);
+      pointer-events: none;
+      transition: opacity 460ms ease, transform 520ms cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    .slide.prev {
+      transform: translateX(-42px) scale(0.985);
+    }
+
+    .stage {
+      width: min(1180px, 100%);
+      min-height: min(690px, calc(100vh - 120px));
+      display: grid;
+      gap: 28px;
+      align-content: center;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--cyan);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 940px;
+      font-size: clamp(58px, 8vw, 112px);
+      line-height: .93;
+      letter-spacing: -0.045em;
+      font-weight: 760;
+    }
+
+    h2 {
+      max-width: 880px;
+      font-size: clamp(42px, 5.4vw, 76px);
+      line-height: .98;
+      letter-spacing: -0.038em;
+      font-weight: 740;
+    }
+
+    h3 {
+      font-size: clamp(22px, 2.2vw, 31px);
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      font-weight: 730;
+    }
+
+    .lead {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 26px);
+      line-height: 1.32;
+      letter-spacing: -0.015em;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 28px;
+      align-items: center;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .panel,
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.84);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .panel {
+      border-radius: var(--radius);
+      padding: clamp(22px, 3vw, 38px);
+    }
+
+    .card {
+      min-height: 150px;
+      border-radius: 22px;
+      padding: 24px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .metric {
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: .96;
+      letter-spacing: -0.04em;
+      font-weight: 760;
+    }
+
+    .hero-media,
+    .screenshot {
+      width: 100%;
+      border-radius: 24px;
+      border: 1px solid rgba(29, 29, 31, 0.1);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16);
+      overflow: hidden;
+      background: #111;
+    }
+
+    .hero-media img,
+    .screenshot img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .hero-media {
+      height: clamp(260px, 46vh, 440px);
+    }
+
+    .screenshot.tall {
+      max-height: 570px;
+    }
+
+    .screenshot.tall img {
+      max-height: 570px;
+      object-fit: cover;
+      object-position: top;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: #2f3437;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .outline-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .outline-item {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 16px;
+      align-items: start;
+      padding: 20px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--line);
+    }
+
+    .num {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: white;
+      background: var(--ink);
+      font-size: 14px;
+      font-weight: 760;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+      position: relative;
+    }
+
+    .flow .card {
+      min-height: 190px;
+      box-shadow: none;
+      border-color: var(--line);
+    }
+
+    .flow .card::before {
+      content: attr(data-step);
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e8f7f5;
+      color: #087e75;
+      font-weight: 780;
+      font-size: 13px;
+    }
+
+    .split-title {
+      display: grid;
+      gap: 18px;
+    }
+
+    .callout {
+      border-radius: 24px;
+      padding: 24px 28px;
+      background: linear-gradient(135deg, rgba(16, 200, 186, 0.16), rgba(20, 124, 229, 0.1));
+      border: 1px solid rgba(16, 200, 186, 0.28);
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .prompt-card {
+      border-radius: 24px;
+      padding: 28px;
+      background: rgba(255, 255, 255, .8);
+      border: 1px solid var(--line);
+      min-height: 270px;
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .prompt {
+      padding: 18px;
+      border-radius: 18px;
+      background: #f5f5f7;
+      color: #2d3136;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .layer {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      gap: 18px;
+      align-items: center;
+      padding: 18px 22px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .8);
+      border: 1px solid var(--line);
+    }
+
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .timeline .card {
+      min-height: 140px;
+      padding: 18px;
+      box-shadow: none;
+      border-color: var(--line);
+    }
+
+    .summary .stage {
+      gap: 16px;
+    }
+
+    .summary h2 {
+      max-width: 790px;
+      font-size: clamp(38px, 4.7vw, 64px);
+    }
+
+    .summary .lead {
+      max-width: 720px;
+      font-size: clamp(17px, 1.7vw, 22px);
+    }
+
+    .summary .grid-2 {
+      gap: 18px;
+    }
+
+    .summary .layer {
+      min-height: 76px;
+      padding: 13px 20px;
+    }
+
+    .summary .layer h3 {
+      font-size: clamp(21px, 1.9vw, 28px);
+    }
+
+    .summary .screenshot {
+      height: 260px;
+    }
+
+    .summary .timeline .card {
+      min-height: 108px;
+      padding: 16px 18px;
+      gap: 6px;
+    }
+
+    .summary .timeline h3 {
+      font-size: clamp(20px, 1.7vw, 27px);
+    }
+
+    .advantages-slide .stage {
+      gap: 18px;
+    }
+
+    .advantages-slide h2 {
+      max-width: 820px;
+      font-size: clamp(38px, 4.8vw, 64px);
+    }
+
+    .advantages-slide .grid-3 {
+      gap: 16px;
+    }
+
+    .advantages-slide .card {
+      min-height: 132px;
+      padding: 20px 24px;
+    }
+
+    .advantages-slide .metric {
+      font-size: clamp(30px, 3.4vw, 46px);
+    }
+
+    .advantages-slide .panel {
+      padding: 24px 30px;
+      min-height: 260px;
+    }
+
+    .advantages-slide .panel .screenshot {
+      height: 250px;
+      box-shadow: none;
+    }
+
+    .advantages-slide .panel .screenshot img {
+      object-fit: contain;
+      background: #fff;
+    }
+
+    .accent-blue { color: var(--blue); }
+    .accent-cyan { color: var(--cyan); }
+    .accent-green { color: var(--green); }
+    .accent-orange { color: var(--orange); }
+    .accent-red { color: var(--red); }
+
+    .controls {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid rgba(29, 29, 31, .1);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, .11);
+      backdrop-filter: blur(18px);
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      background: #1d1d1f;
+      color: white;
+      width: 42px;
+      height: 42px;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: .28;
+      cursor: default;
+    }
+
+    .counter {
+      min-width: 72px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 4px;
+      z-index: 13;
+      background: rgba(29, 29, 31, .08);
+    }
+
+    .progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+      transition: width 380ms ease;
+    }
+
+    .click-zone {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      z-index: 8;
+    }
+
+    .click-zone.left { left: 0; width: 20vw; }
+    .click-zone.right { right: 0; width: 80vw; }
+
+    @media (max-width: 880px) {
+      body { overflow: hidden; }
+      .slide { padding: 24px 18px 86px; }
+      .stage {
+        min-height: calc(100vh - 110px);
+        gap: 18px;
+      }
+      .grid-2,
+      .compare,
+      .outline-list,
+      .grid-3,
+      .flow,
+      .timeline {
+        grid-template-columns: 1fr;
+      }
+      .hero-media { height: 260px; }
+      .screenshot.tall img { max-height: 360px; }
+      .card,
+      .panel,
+      .prompt-card {
+        border-radius: 20px;
+        padding: 20px;
+      }
+      .layer {
+        grid-template-columns: 1fr;
+      }
+      .click-zone.left { width: 24vw; }
+      .click-zone.right { width: 76vw; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide,
+      .progress span {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" aria-live="polite">
+    <section class="slide active" data-title="Cover">
+      <div class="stage grid-2">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> 3-Minute Quick Start</div>
+          <h1>Call Advanced AI via API.</h1>
+          <p class="lead">A practical path from manual AI app usage to flexible integration, lower costs, and direct access to model capabilities.</p>
+          <div class="chips">
+            <span class="chip">Flexible integration</span>
+            <span class="chip">Pay by usage</span>
+            <span class="chip">Connect to models</span>
+          </div>
+        </div>
+        <div class="hero-media"><img src="html_assets/image.jpeg" alt="Abstract light background from the source deck" /></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Outline">
+      <div class="stage">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Roadmap</div>
+          <h2>Six ideas, one operating flow.</h2>
+        </div>
+        <div class="outline-list">
+          <div class="outline-item"><span class="num">01</span><div><h3>Why APIs?</h3><p class="small">High subscription fees, short-term testing, and integration needs.</p></div></div>
+          <div class="outline-item"><span class="num">02</span><div><h3>What is an API?</h3><p class="small">A software interface that connects tools to AI model services.</p></div></div>
+          <div class="outline-item"><span class="num">03</span><div><h3>Core advantages</h3><p class="small">Flexibility, usage-based cost, and faster development.</p></div></div>
+          <div class="outline-item"><span class="num">04</span><div><h3>Chatbox hands-on</h3><p class="small">Prepare the key, base URL, and model name, then configure the client.</p></div></div>
+          <div class="outline-item"><span class="num">05</span><div><h3>Prompt technique</h3><p class="small">Connection is not enough; precise asking drives output quality.</p></div></div>
+          <div class="outline-item"><span class="num">06</span><div><h3>Summary</h3><p class="small">Review the API calling loop and the steps to reproduce it.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Traditional Apps">
+      <div class="stage grid-2">
+        <div>
+          <div class="topline"><span class="dot"></span> Before API</div>
+          <h2>Traditional AI apps are simple, but closed.</h2>
+          <p class="lead">You log in, chat manually, copy the answer, and paste it somewhere else. That is easy to learn, but hard to automate.</p>
+        </div>
+        <div class="screenshot"><img src="html_assets/image.png" alt="AI app subscription interface" /></div>
+        <div class="grid-3" style="grid-column: 1 / -1;">
+          <div class="card"><h3>Open app, chat manually</h3><p class="small">The experience is optimized for one person using a polished interface.</p></div>
+          <div class="card"><h3>Low learning cost</h3><p class="small">No programming is required; account login, history, and model selection are already packaged.</p></div>
+          <div class="card"><h3>Hard to integrate</h3><p class="small">The capability stays inside the app instead of becoming part of your own system.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Why APIs">
+      <div class="stage">
+        <div class="grid-2">
+          <div class="split-title">
+            <div class="topline"><span class="dot"></span> Modern Way: Using APIs</div>
+            <h2>API access turns AI into a callable capability.</h2>
+            <p class="lead">APIs make AI callable from your own tools: pay by usage, automate tasks, and connect model output directly into workflows.</p>
+          </div>
+          <div class="screenshot"><img src="html_assets/image2.png" alt="API usage dashboard screenshot" /></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Lower waste</h3><p class="small">Pay for actual calls instead of committing to a fixed monthly membership for occasional testing.</p></div>
+          <div class="card"><h3>System integration</h3><p class="small">Put the model behind your own apps, scripts, and business workflows.</p></div>
+          <div class="card callout"><h3>Answer: Use an API</h3><p class="small">A flexible bridge between your program and advanced AI models.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="What is an API">
+      <div class="stage">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Concept</div>
+          <h2>An API is the interface between your tool and the model service.</h2>
+          <p class="lead">The client sends structured data through the API. The AI server processes it and returns the generated result.</p>
+        </div>
+        <div class="flow">
+          <div class="card" data-step="01"><h3>User input</h3><p class="small">A user enters a question, command, or task in the client application.</p></div>
+          <div class="card" data-step="02"><h3>Send request</h3><p class="small">The program packages the input and calls the AI model server through the API.</p></div>
+          <div class="card" data-step="03"><h3>Model inference</h3><p class="small">The AI model reasons, computes, and generates a response on the server side.</p></div>
+          <div class="card" data-step="04"><h3>Return result</h3><p class="small">The answer returns to the client and becomes visible in the app or workflow.</p></div>
+        </div>
+        <div class="callout"><h3>Core role</h3><p class="small">APIs let our programs connect to powerful AI models, enabling interoperability and capability expansion.</p></div>
+      </div>
+    </section>
+
+    <section class="slide advantages-slide" data-title="Advantages">
+      <div class="stage">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Core Advantages</div>
+          <h2>APIs are the bridge for modern AI applications.</h2>
+        </div>
+        <div class="grid-3">
+          <div class="card"><p class="metric accent-blue">Flexible</p><h3>Use any tool</h3><p class="small">Integrate with Chatbox, custom programs, summarizers, support bots, and internal tools.</p></div>
+          <div class="card"><p class="metric accent-green">Pay as you go</p><h3>Control cost</h3><p class="small">No fixed monthly fee; cost follows actual usage and avoids idle subscription waste.</p></div>
+          <div class="card"><p class="metric accent-cyan">Fast to build</p><h3>Lower threshold</h3><p class="small">Quickly prototype assistants, automation, and personalized AI functions.</p></div>
+        </div>
+        <div class="panel grid-2">
+          <div><h3>Core conclusion</h3><p class="small">For model testing, software development, or AI function integration, API access gives developers and technical users better control.</p></div>
+          <div class="screenshot"><img src="html_assets/image4.jpeg" alt="Illustration from source slide about API advantages" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Requirements">
+      <div class="stage grid-2">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Chatbox Preparation</div>
+          <h2>To call an API, prepare three things.</h2>
+          <div class="stack">
+            <div class="layer"><h3>API Key</h3><p class="small">The passport that authenticates identity and authorizes service access.</p></div>
+            <div class="layer"><h3>API Address</h3><p class="small">The host or base URL that tells Chatbox where to send requests.</p></div>
+            <div class="layer"><h3>Model Name</h3><p class="small">The specific model you want to call, with its own capabilities and price.</p></div>
+          </div>
+        </div>
+        <div class="screenshot tall"><img src="html_assets/image5.jpeg" alt="Chatbox model configuration screenshot" /></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Configure">
+      <div class="stage grid-2">
+        <div class="screenshot tall"><img src="html_assets/image6.jpeg" alt="Chatbox API configuration interface" /></div>
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Configuration</div>
+          <h2>Fill the connection details, then verify.</h2>
+          <div class="stack">
+            <div class="layer"><h3>Open settings</h3><p class="small">Enter the model configuration area in Chatbox.</p></div>
+            <div class="layer"><h3>Paste API key</h3><p class="small">Add the key and run a validity check.</p></div>
+            <div class="layer"><h3>Set host and model</h3><p class="small">Fill the API host, path, and model name, then save.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Invocation">
+      <div class="stage">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Actual Invocation</div>
+          <h2>After configuration, it still feels like normal chat.</h2>
+          <p class="lead">The API work is hidden behind the client. You focus on the prompt and result while the tool handles request packaging and model scheduling.</p>
+        </div>
+        <div class="flow">
+          <div class="card" data-step="01"><h3>Input prompt</h3><p class="small">Type the question or instruction in Chatbox.</p></div>
+          <div class="card" data-step="02"><h3>Send request</h3><p class="small">Chatbox packages the prompt and sends it to the configured API.</p></div>
+          <div class="card" data-step="03"><h3>Model inference</h3><p class="small">The model generates a response on the server side.</p></div>
+          <div class="card" data-step="04"><h3>Return answer</h3><p class="small">The result comes back through the API and appears in the client.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Prompts">
+      <div class="stage">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Prompt Optimization</div>
+          <h2>Calling AI is not just connecting. It is asking precisely.</h2>
+        </div>
+        <div class="compare">
+          <div class="prompt-card">
+            <h3><span class="accent-red">Vague prompt</span>: weak direction</h3>
+            <div class="prompt">Tell me about APIs.</div>
+            <p class="small">Too broad. The model cannot tell whether you need concepts, principles, or examples.</p>
+          </div>
+          <div class="prompt-card">
+            <h3><span class="accent-green">Quality prompt</span>: clear goal</h3>
+            <div class="prompt">Explain how to use Chatbox to call AI via API in the style of a 3-minute speech.</div>
+            <p class="small">Context, audience, format, and task are explicit, so the output becomes more usable.</p>
+          </div>
+        </div>
+        <div class="callout"><h3>Principle</h3><p class="small">The more specific the prompt, the more the AI output aligns with your needs.</p></div>
+      </div>
+    </section>
+
+    <section class="slide summary" data-title="Summary">
+      <div class="stage">
+        <div class="split-title">
+          <div class="topline"><span class="dot"></span> Review</div>
+          <h2>API calling is a repeatable loop.</h2>
+          <p class="lead">Use API access to call advanced AI on demand, avoid full membership waste, and integrate model output into personal tools or business systems.</p>
+        </div>
+        <div class="grid-2">
+          <div class="stack">
+            <div class="layer"><h3>API Connector</h3><p class="small">Sends user requests to the model and returns results.</p></div>
+            <div class="layer"><h3>Chatbox Interaction Layer</h3><p class="small">Receives input, displays output, and keeps the user interface friendly.</p></div>
+            <div class="layer"><h3>Model Computation Layer</h3><p class="small">Performs inference and generates the answer.</p></div>
+          </div>
+          <div class="screenshot"><img src="html_assets/image7.jpeg" alt="Summary background from source slide" /></div>
+        </div>
+        <div class="timeline">
+          <div class="card"><strong>01</strong><h3>Get API</h3><p class="small">Apply for a key.</p></div>
+          <div class="card"><strong>02</strong><h3>Fill tool</h3><p class="small">Configure Chatbox.</p></div>
+          <div class="card"><strong>03</strong><h3>Select model</h3><p class="small">Match the task.</p></div>
+          <div class="card"><strong>04</strong><h3>Input prompt</h3><p class="small">Describe precisely.</p></div>
+          <div class="card"><strong>05</strong><h3>Get answer</h3><p class="small">Empower work.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="click-zone left" aria-hidden="true"></div>
+  <div class="click-zone right" aria-hidden="true"></div>
+  <nav class="controls" aria-label="Slide controls">
+    <button id="prev" type="button" aria-label="Previous slide">‹</button>
+    <div class="counter"><span id="current">01</span> / <span id="total">11</span></div>
+    <button id="next" type="button" aria-label="Next slide">›</button>
+  </nav>
+  <div class="progress" aria-hidden="true"><span id="bar"></span></div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const prevButton = document.getElementById("prev");
+    const nextButton = document.getElementById("next");
+    const current = document.getElementById("current");
+    const total = document.getElementById("total");
+    const bar = document.getElementById("bar");
+    const leftZone = document.querySelector(".click-zone.left");
+    const rightZone = document.querySelector(".click-zone.right");
+    let index = 0;
+
+    function readHashIndex() {
+      const match = window.location.hash.match(/slide-(\d+)/);
+      if (!match) return 0;
+      return Math.max(0, Math.min(slides.length - 1, Number(match[1]) - 1));
+    }
+
+    total.textContent = String(slides.length).padStart(2, "0");
+
+    function render() {
+      slides.forEach((slide, slideIndex) => {
+        slide.classList.toggle("active", slideIndex === index);
+        slide.classList.toggle("prev", slideIndex < index);
+      });
+      current.textContent = String(index + 1).padStart(2, "0");
+      prevButton.disabled = index === 0;
+      nextButton.disabled = index === slides.length - 1;
+      bar.style.width = `${((index + 1) / slides.length) * 100}%`;
+      document.title = `${slides[index].dataset.title} · Call Advanced AI via API`;
+      const nextHash = `#slide-${index + 1}`;
+      if (window.location.hash !== nextHash) {
+        history.replaceState(null, "", nextHash);
+      }
+    }
+
+    function go(delta) {
+      index = Math.max(0, Math.min(slides.length - 1, index + delta));
+      render();
+    }
+
+    prevButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      go(-1);
+    });
+
+    nextButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      go(1);
+    });
+
+    leftZone.addEventListener("click", () => go(-1));
+    rightZone.addEventListener("click", () => go(1));
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === " " || event.key === "PageDown") {
+        event.preventDefault();
+        go(1);
+      }
+      if (event.key === "ArrowLeft" || event.key === "PageUp") {
+        event.preventDefault();
+        go(-1);
+      }
+      if (event.key === "Home") {
+        index = 0;
+        render();
+      }
+      if (event.key === "End") {
+        index = slides.length - 1;
+        render();
+      }
+    });
+
+    window.addEventListener("hashchange", () => {
+      index = readHashIndex();
+      render();
+    });
+
+    index = readHashIndex();
+    render();
+  </script>
+</body>
+</html>
